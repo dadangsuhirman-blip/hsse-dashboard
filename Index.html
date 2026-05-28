@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HSSE Dashboard — Zona 8 · 2026</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.4.0/tabler-icons.min.css">
+<style>
+:root{
+  --navy:#003366; --navy-d:#002244;
+  --n50:#F8FAFC; --n100:#F1F5F9; --n200:#E2E8F0;
+  --n300:#CBD5E1; --n400:#94A3B8; --n500:#64748B;
+  --n700:#334155; --n900:#0F172A;
+  --fxs:clamp(8.5px,1vw,10.5px);
+  --fsm:clamp(9.5px,1.2vw,11.5px);
+  --fmd:clamp(10.5px,1.3vw,13px);
+  --flg:clamp(12px,1.6vw,15px);
+  --fxl:clamp(14px,1.9vw,18px);
+  --f2x:clamp(16px,2.4vw,22px);
+  --f3x:clamp(22px,3.2vw,32px);
+  --f4x:clamp(28px,4vw,40px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-size:var(--fmd);color:var(--n900);background:var(--n50)}
+button,select,input{font-family:inherit;font-size:var(--fsm)}
+select,input{border:.5px solid var(--n300);border-radius:4px;padding:5px 8px;background:#fff;color:var(--n900)}
+select:focus,input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 2px rgba(0,51,102,.12)}
+button.primary{background:var(--navy);color:#fff;border:none;padding:6px 14px;border-radius:4px;font-weight:500;cursor:pointer}
+button.primary:hover{background:var(--navy-d)}
+.nav-pill{padding:4px 11px;border-radius:3px;font-size:var(--fsm);font-weight:500;border:.5px solid transparent;cursor:pointer;transition:all .12s}
+.tab-link{padding:9px 16px;border:none;border-bottom:2px solid transparent;background:none;font-size:var(--fmd);cursor:pointer;color:var(--n500);font-weight:400}
+.tab-link.on{border-bottom-color:var(--navy);color:var(--navy);font-weight:500}
+.card{background:#fff;border:.5px solid var(--n200);border-radius:8px;overflow:hidden}
+.section-lbl{font-size:var(--fxs);font-weight:600;letter-spacing:.1em;color:var(--n400);text-transform:uppercase}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{padding:clamp(7px,1vw,10px) clamp(8px,1.2vw,14px);font-size:var(--fxs);font-weight:600;letter-spacing:.07em;color:#fff;text-align:center;white-space:nowrap}
+.tbl th:first-child{text-align:left}
+.tbl td{padding:clamp(7px,1vw,10px) clamp(8px,1.2vw,14px);border-bottom:.5px solid var(--n200);text-align:center;font-size:var(--fsm);vertical-align:middle}
+.tbl td:first-child{text-align:left}
+.tbl tbody tr:hover{background:var(--n50)}
+.prog{height:3px;background:var(--n200);border-radius:2px;overflow:hidden;width:clamp(36px,5vw,56px);display:inline-block}
+.topic-row{display:flex;align-items:center;padding:clamp(8px,1.2vw,11px) 14px;cursor:pointer;border-bottom:.5px solid var(--n200);gap:9px;transition:background .1s}
+.topic-row:hover{background:var(--n50)}
+.act-row{display:flex;align-items:center;padding:clamp(6px,1vw,9px) 14px clamp(6px,1vw,9px) 36px;gap:8px;border-bottom:.5px solid #F1F5F9;cursor:pointer;transition:background .1s}
+.act-row:hover{background:#FAFBFF}
+.week-panel{margin:0 14px 11px 36px;background:var(--n50);border:.5px solid var(--n200);border-radius:6px;padding:clamp(10px,1.5vw,14px)}
+.hist-tag{display:inline-flex;align-items:center;gap:5px;background:#fff;border:.5px solid var(--n200);border-radius:4px;padding:3px 8px;font-size:var(--fxs)}
+.num-badge{width:clamp(18px,2.2vw,22px);height:clamp(18px,2.2vw,22px);border-radius:50%;background:var(--n100);display:flex;align-items:center;justify-content:center;font-size:var(--fxs);font-weight:700;color:var(--n500);flex-shrink:0}
+.dl-bar{background:#fff;border-bottom:.5px solid var(--n200);padding:5px 18px;display:flex;align-items:center;gap:14px;font-size:var(--fxs)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const{useState,useEffect}=React,h=React.createElement;
+const SITES=["SPS","BKP","HCA","CPU","NPU","SPU","SNB","POMA"];
+const ASPECTS=["Health","Safety","Security","Environment"];
+const TOPICS={
+Health:[
+ {name:"Medical Surveillance & Kesehatan Kerja",acts:[{n:"Medical Check-Up (MCU) karyawan",u:"%",t:100},{n:"Monitoring Penyakit Akibat Kerja (PAK)",u:"laporan",t:12},{n:"Fit for Work Assessment",u:"%",t:100},{n:"Tindak lanjut kasus medis & rekam medis",u:"%",t:100}]},
+ {name:"Hygiene Industri & Lingkungan Kerja",acts:[{n:"Pengukuran faktor fisika (kebisingan, pencahayaan)",u:"kali",t:4},{n:"Pengukuran kualitas udara tempat kerja",u:"kali",t:4},{n:"Pengelolaan Bahan Berbahaya Beracun (B3)",u:"%",t:100},{n:"Inspeksi hygiene tempat kerja",u:"inspeksi",t:12}]},
+ {name:"Promosi Kesehatan & Wellness",acts:[{n:"Health Talk & Sosialisasi kesehatan",u:"sesi",t:12},{n:"Kampanye kesehatan (gizi, olahraga)",u:"kampanye",t:6},{n:"Program anti-narkoba & alkohol",u:"program",t:4},{n:"Pengelolaan stress kerja & mental health",u:"sesi",t:4}]},
+ {name:"Kesiapan Fasilitas & Emergency Medis",acts:[{n:"Kesiapan klinik, tenaga medis & peralatan",u:"%",t:100},{n:"Ketersediaan obat & alat medis (stok)",u:"%",t:100},{n:"Medical Emergency Response drill",u:"drill",t:4},{n:"Prosedur evakuasi medis (medevac)",u:"%",t:100}]},
+ {name:"Pelaporan & Analisis Kesehatan",acts:[{n:"Laporan kasus kecelakaan & penyakit kerja",u:"laporan",t:12},{n:"Pelaporan ke instansi terkait (Disnaker, BPJS)",u:"laporan",t:12},{n:"Analisis trend kesehatan & rekomendasi",u:"analisis",t:4},{n:"Audit sistem manajemen kesehatan kerja",u:"audit",t:2}]}],
+Safety:[
+ {name:"Kesiapan Safety & Emergency Equipment",acts:[{n:"Inventarisir peralatan safety & emergency",u:"%",t:100},{n:"Sistem ITPM – Dashboard shortage & backlog",u:"%",t:100},{n:"Audit pengelolaan peralatan",u:"kali",t:4},{n:"Familiarisasi User",u:"sesi",t:6}]},
+ {name:"Readiness Instalasi & SECE",acts:[{n:"Inventory DGS, MIT & Temporary Repair",u:"%",t:100},{n:"Dashboard mitigation action",u:"%",t:100},{n:"Worksite Assurance – Inspeksi & eskalasi",u:"kali",t:12},{n:"Program IHSB (realisasi & FUA)",u:"program",t:4}]},
+ {name:"Safe Control of Work",acts:[{n:"Ketersediaan SWP (TKO & TKPA)",u:"%",t:100},{n:"Observasi Critical Activity (plan vs realisasi)",u:"observasi",t:24},{n:"Inspeksi SIKA & JSA",u:"inspeksi",t:48},{n:"Register & FUA",u:"%",t:100}]},
+ {name:"Safety Culture & Behaviour",acts:[{n:"Leader MWT (plan, realisasi, FUA)",u:"kali",t:12},{n:"Observasi UAUC",u:"observasi",t:200},{n:"TEMAN & SWA",u:"%",t:100},{n:"Program Frontliner Speak Up (register & FUA)",u:"laporan",t:50}]},
+ {name:"Emergency Response & Preparedness",acts:[{n:"Updated Prosedur Tanggap Darurat",u:"%",t:100},{n:"Management Drill & Exercises (realisasi & FUA)",u:"drill",t:6},{n:"Kompetensi ECC & EIT (domex, local inisiatif)",u:"%",t:100},{n:"TOP MAH Exercises",u:"exercises",t:2}]}],
+Security:[
+ {name:"Pengelolaan Akses & Perimeter",acts:[{n:"Kontrol akses masuk/keluar (orang & kendaraan)",u:"%",t:100},{n:"Inspeksi perimeter & pagar pengamanan",u:"kali",t:12},{n:"Pengelolaan tamu, vendor & kontraktor",u:"%",t:100},{n:"Inspeksi & kalibrasi sistem CCTV",u:"kali",t:4}]},
+ {name:"Patroli & Pengawasan Wilayah",acts:[{n:"Patroli rutin harian (plan vs realisasi)",u:"patroli",t:365},{n:"Patroli area kritis & instalasi vital",u:"kali",t:52},{n:"Quick Response Team (QRT) readiness",u:"%",t:100},{n:"Evaluasi efektivitas patroli",u:"laporan",t:12}]},
+ {name:"Manajemen Insiden Keamanan",acts:[{n:"Pelaporan insiden keamanan",u:"%",t:100},{n:"Investigasi & tindak lanjut insiden",u:"%",t:100},{n:"Register ancaman & penilaian risiko keamanan",u:"kali",t:4},{n:"Koordinasi dengan pihak keamanan eksternal",u:"kali",t:12}]},
+ {name:"Kompetensi & Pelatihan Security",acts:[{n:"Pelatihan dasar security & refreshment",u:"sesi",t:4},{n:"Sertifikasi Gada Pratama/Madya",u:"%",t:100},{n:"Drill & simulasi keamanan",u:"drill",t:4},{n:"Security briefing & komunikasi rutin",u:"kali",t:52}]},
+ {name:"Threat Assessment & Community Engagement",acts:[{n:"Security Risk Assessment (SRA)",u:"SRA",t:2},{n:"Intelligence & early warning system",u:"laporan",t:12},{n:"Community engagement & liaison program",u:"kegiatan",t:12},{n:"Review & update Security Management Plan",u:"review",t:2}]}],
+Environment:[
+ {name:"Pengelolaan Limbah & B3",acts:[{n:"Pengelolaan limbah B3 (manifest & TPS B3)",u:"%",t:100},{n:"Pengelolaan limbah non-B3 & domestik",u:"%",t:100},{n:"Audit pengelolaan limbah",u:"audit",t:4},{n:"Pelaporan manifest limbah B3 ke instansi",u:"laporan",t:12}]},
+ {name:"Pemantauan Kualitas Lingkungan",acts:[{n:"Pemantauan kualitas air (outlet & sungai)",u:"kali",t:4},{n:"Pemantauan kualitas udara & emisi stack",u:"kali",t:4},{n:"Pemantauan kebisingan lingkungan sekitar",u:"kali",t:4},{n:"Pemantauan tanah, sedimen & air tanah",u:"kali",t:2}]},
+ {name:"Pengendalian Tumpahan & Pencemaran",acts:[{n:"Inspeksi area potensi tumpahan (spill prone)",u:"inspeksi",t:12},{n:"Spill Response Drill",u:"drill",t:4},{n:"Kesiapan peralatan spill response",u:"%",t:100},{n:"Tindak lanjut insiden lingkungan",u:"%",t:100}]},
+ {name:"Perizinan & Pelaporan Lingkungan",acts:[{n:"Kepatuhan izin lingkungan (AMDAL/UKL-UPL)",u:"%",t:100},{n:"Pelaporan RKL-RPL ke instansi lingkungan",u:"laporan",t:4},{n:"Audit lingkungan (internal & eksternal)",u:"audit",t:2},{n:"Tindak lanjut temuan audit lingkungan",u:"%",t:100}]},
+ {name:"Program Lingkungan & Konservasi",acts:[{n:"Program penghijauan & reklamasi lahan",u:"program",t:4},{n:"Efisiensi energi & pengurangan konsumsi air",u:"%",t:100},{n:"Program pengurangan emisi GRK (GHG)",u:"%",t:100},{n:"Program CSR & keterlibatan komunitas",u:"program",t:4}]}]
+};
+const DEMO={SPS:{Health:[.91,.88,.93,.95,.90],Safety:[.89,.85,.88,.91,.92],Security:[.93,.95,.90,.92,.88],Environment:[.88,.90,.92,.85,.89]},BKP:{Health:[.85,.88,.92,.87,.83],Safety:[.78,.92,.88,.85,.90],Security:[.90,.88,.85,.92,.89],Environment:[.82,.86,.90,.88,.85]},HCA:{Health:[.70,.75,.78,.82,.72],Safety:[.72,.68,.75,.80,.71],Security:[.85,.80,.78,.82,.88],Environment:[.76,.72,.80,.75,.78]},CPU:{Health:[.90,.88,.92,.85,.91],Safety:[.93,.91,.88,.92,.90],Security:[.87,.90,.92,.88,.85],Environment:[.92,.88,.90,.85,.91]},NPU:{Health:[.68,.72,.75,.70,.65],Safety:[.70,.68,.72,.65,.75],Security:[.78,.75,.80,.72,.77],Environment:[.65,.70,.68,.72,.75]},SPU:{Health:[.88,.90,.85,.92,.89],Safety:[.85,.88,.90,.87,.92],Security:[.90,.88,.85,.92,.91],Environment:[.88,.85,.90,.87,.92]},SNB:{Health:[.92,.95,.90,.93,.88],Safety:[.90,.88,.92,.95,.91],Security:[.93,.90,.88,.92,.95],Environment:[.90,.92,.95,.88,.91]},POMA:{Health:[.82,.80,.85,.78,.83],Safety:[.78,.82,.80,.85,.79],Security:[.82,.80,.85,.88,.83],Environment:[.80,.78,.82,.85,.80]}};
+function makeDemo(site){const d={},dm=DEMO[site]||{};ASPECTS.forEach(asp=>{d[asp]={};const pcts=dm[asp]||Array(5).fill(.8);TOPICS[asp].forEach((tp,ti)=>{d[asp][ti]={};tp.acts.forEach((act,ai)=>{const base=pcts[ti]+(ai-1.5)*0.02;d[asp][ti][ai]={20:+(act.t*Math.max(.5,Math.min(1,base))).toFixed(1)};});});});return d;}
+function lastVal(w){const e=Object.entries(w||{}).filter(([,v])=>v!=null&&v!=="").sort((a,b)=>+a[0]-+b[0]);return e.length?+e[e.length-1][1]:0;}
+function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0;}
+function actPct(w,t){return t>0?Math.min(lastVal(w)/t,1):0;}
+function topicPct(data,asp,ti){return avg(TOPICS[asp][ti].acts.map((a,ai)=>actPct(data?.[asp]?.[ti]?.[ai],a.t)));}
+function aspPct(data,asp){return avg(TOPICS[asp].map((_,ti)=>topicPct(data,asp,ti)));}
+function overallPct(data){return avg(ASPECTS.map(a=>aspPct(data,a)));}
+function fp(v){return Math.round(v*100)+"%";}
+const NAVY="#003366",NAVY_D="#002244";
+const ST={track:{label:"On Track",dot:"#16A34A",txt:"#fff",lt:"#F0FDF4",soft:"#15803D"},attn:{label:"Attention",dot:"#D97706",txt:"#fff",lt:"#FFFBEB",soft:"#92400E"},alarm:{label:"Alarming",dot:"#DC2626",txt:"#fff",lt:"#FEF2F2",soft:"#991B1B"}};
+function st(p){return p>=.9?ST.track:p>=.75?ST.attn:ST.alarm;}
+function weekDate(w){const d=new Date(2026,0,1);d.setDate(d.getDate()+(w-1)*7);const e=new Date(d);e.setDate(e.getDate()+6);const f=x=>`${String(x.getDate()).padStart(2,"0")}/${String(x.getMonth()+1).padStart(2,"0")}`;return`${f(d)}–${f(e)}`;}
+function Dot({p,sz}){sz=sz||6;const s=st(p);return h("span",{style:{width:sz,height:sz,borderRadius:"50%",background:s.dot,display:"inline-block",flexShrink:0}});}
+function StTxt({p}){const s=st(p);return h("span",{style:{display:"inline-flex",alignItems:"center",gap:5,fontSize:"var(--fsm)"}},h(Dot,{p}),h("span",{style:{color:s.soft,fontWeight:500}},s.label));}
+function ProgBar({p}){const s=st(p);return h("div",{className:"prog"},h("div",{style:{width:`${Math.round(p*100)}%`,height:"100%",background:s.dot,borderRadius:2}}));}
+function StatusBlock({p,big,label}){const s=st(p);return h("div",{style:{background:s.dot,padding:big?"clamp(12px,2vw,18px)":"clamp(8px,1.2vw,12px)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2}},label&&h("div",{style:{color:"rgba(255,255,255,.7)",fontSize:"var(--fxs)",fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",marginBottom:2}},label),h("div",{style:{color:"#fff",fontWeight:big?300:600,fontSize:big?"var(--f4x)":"var(--f3x)",letterSpacing:big?"-0.03em":"-0.01em",lineHeight:1}},fp(p)),h("div",{style:{color:"rgba(255,255,255,.85)",fontSize:"var(--fsm)",fontWeight:500,marginTop:2}},s.label));}
+// localStorage helpers
+function loadAll(){const d={};for(const s of SITES){try{const raw=localStorage.getItem(`hsse-z8-${s}`);d[s]=raw?JSON.parse(raw):makeDemo(s);}catch{d[s]=makeDemo(s);}}return d;}
+function saveSite(site,data){try{localStorage.setItem(`hsse-z8-${site}`,JSON.stringify(data));}catch(e){console.error(e);}}
+function WeekPanel({asp,ti,ai,act,weeks,onUpdate}){
+ const entries=Object.keys(weeks||{}).map(Number).sort((a,b)=>a-b);
+ const defW=entries.length?Math.min(entries[entries.length-1]+1,52):20;
+ const[selW,setSelW]=useState(defW);const[val,setVal]=useState("");
+ function save(){if(!val)return;onUpdate(asp,ti,ai,selW,val);setVal("");setSelW(w=>Math.min(w+1,52));}
+ const hist=Object.entries(weeks||{}).filter(([,v])=>v!=null&&v!=="").sort((a,b)=>+a[0]-+b[0]);
+ return h("div",{className:"week-panel"},
+  h("div",{style:{display:"flex",alignItems:"center",gap:6,marginBottom:9,flexWrap:"wrap"}},
+   h("span",{className:"section-lbl"},"Realisasi mingguan"),
+   h("span",{style:{fontSize:"var(--fxs)",color:"#CBD5E1"}},"·"),
+   h("span",{style:{fontSize:"var(--fxs)",color:"var(--n400)"}},`Target: ${act.t} ${act.u}`)
+  ),
+  h("div",{style:{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}},
+   h("select",{value:selW,onChange:e=>setSelW(+e.target.value)},
+    Array.from({length:52},(_,i)=>i+1).map(w=>h("option",{key:w,value:w},`W${String(w).padStart(2,"0")} (${weekDate(w)})${(weeks||{})[w]!=null?" ✓":""}`))),
+   h("input",{type:"number",value:val,onChange:e=>setVal(e.target.value),
+    placeholder:"Nilai realisasi kumulatif",min:0,max:act.t*1.5,
+    style:{flex:1,minWidth:160},onKeyDown:e=>{if(e.key==="Enter")save();}}),
+   h("button",{className:"primary",onClick:save},"Simpan")
+  ),
+  hist.length>0&&h("div",{style:{marginTop:9}},
+   h("div",{className:"section-lbl",style:{marginBottom:5}},"Riwayat"),
+   h("div",{style:{display:"flex",flexWrap:"wrap",gap:4}},
+    hist.map(([w,v])=>{const pp=Math.min(+v/act.t,1);const s=st(pp);
+     return h("div",{key:w,className:"hist-tag"},
+      h("span",{style:{color:"var(--n400)"}},"W"+String(+w).padStart(2,"0")),
+      h("span",{style:{fontWeight:600}},""+v),
+      h("span",{style:{color:s.soft,fontWeight:500}},fp(pp)),
+      h("button",{onClick:()=>onUpdate(asp,ti,ai,+w,""),style:{background:"none",border:"none",cursor:"pointer",color:"var(--n300)",padding:0,marginLeft:2}},
+       h("i",{className:"ti ti-x",style:{fontSize:"var(--fxs)"}})));})
+   ))
+ );
+}
+function SiteView({site,setSite,asp,setAsp,data,onUpdate}){
+ const[openT,setOpenT]=useState(null);const[openA,setOpenA]=useState(null);
+ function chSite(s){setSite(s);setOpenT(null);setOpenA(null);history.replaceState(null,"","#site-detail");}
+ function chAsp(a){setAsp(a);setOpenT(null);setOpenA(null);}
+ const ovr=overallPct(data);
+ return h("div",null,
+  h("div",{style:{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",marginBottom:14}},
+   h("span",{className:"section-lbl",style:{marginRight:4}},"Site"),
+   SITES.map(s=>{const active=s===site;return h("button",{key:s,className:"nav-pill",onClick:()=>chSite(s),
+    style:{background:active?NAVY:"#fff",color:active?"#fff":"var(--n700)",borderColor:active?NAVY:"var(--n200)",fontWeight:active?600:400}},s);})
+  ),
+  h("div",{style:{display:"grid",gridTemplateColumns:"auto 1fr",gap:9,marginBottom:12}},
+   h("div",{style:{borderRadius:8,overflow:"hidden",minWidth:"clamp(130px,16vw,165px)"}},h(StatusBlock,{p:ovr,big:true,label:"Overall HSSE — "+site})),
+   h("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7}},
+    ASPECTS.map(a=>{const pp=aspPct(data,a);const s=st(pp);
+     return h("div",{key:a,onClick:()=>chAsp(a),style:{borderRadius:8,overflow:"hidden",cursor:"pointer",boxShadow:a===asp?"0 0 0 3px "+NAVY:"none"}},
+      h("div",{style:{background:s.dot,padding:"clamp(8px,1.2vw,11px) clamp(9px,1.3vw,13px)"}},
+       h("div",{style:{color:"rgba(255,255,255,.7)",fontSize:"var(--fxs)",fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",marginBottom:3}},a.toUpperCase()),
+       h("div",{style:{color:"#fff",fontSize:"var(--f3x)",fontWeight:300,letterSpacing:"-0.02em",lineHeight:1}},fp(pp))
+      ),
+      h("div",{style:{background:"#fff",border:".5px solid var(--n200)",borderTop:"none",borderRadius:"0 0 8px 8px",padding:"4px clamp(8px,1.2vw,12px)",display:"flex",justifyContent:"space-between",alignItems:"center"}},
+       h("span",{style:{fontSize:"var(--fxs)",color:s.soft,fontWeight:500}},s.label),
+       a===asp&&h("span",{style:{fontSize:"var(--fxs)",color:NAVY,fontWeight:700,letterSpacing:".04em"}},"ACTIVE")
+      )
+     );
+    })
+   )
+  ),
+  h("div",{className:"card"},
+   h("div",{style:{background:NAVY,padding:"clamp(8px,1.2vw,11px) 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:6}},
+    h("span",{style:{color:"#fff",fontWeight:500,fontSize:"var(--fmd)"}},asp+" performance — "+site),
+    h("span",{style:{color:"#7FA8D4",fontSize:"var(--fxs)"}},"5 topics · 20 activities · weekly input W01–W52 · 2026")
+   ),
+   TOPICS[asp].map((topic,ti)=>{
+    const tp=topicPct(data,asp,ti);const ts=st(tp);const isOT=openT===ti;
+    return h("div",{key:ti},
+     h("div",{className:"topic-row",onClick:()=>{setOpenT(isOT?null:ti);setOpenA(null);},style:{background:isOT?"var(--n50)":"#fff"}},
+      h("i",{className:"ti "+(isOT?"ti-chevron-down":"ti-chevron-right"),style:{fontSize:"var(--fsm)",color:"var(--n400)",flexShrink:0}}),
+      h("div",{style:{width:"clamp(18px,2.2vw,22px)",height:"clamp(18px,2.2vw,22px)",borderRadius:3,background:NAVY+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"var(--fxs)",fontWeight:700,color:NAVY,flexShrink:0}},String(ti+1).padStart(2,"0")),
+      h("span",{style:{flex:1,fontWeight:500,fontSize:"var(--fmd)",color:"#1E293B"}},topic.name),
+      h("div",{style:{display:"flex",alignItems:"center",gap:9}},h(ProgBar,{p:tp}),h("span",{style:{fontWeight:600,fontSize:"var(--flg)",color:ts.soft,minWidth:34,textAlign:"right"}},fp(tp)),h(Dot,{p:tp}))
+     ),
+     isOT&&topic.acts.map((act,ai)=>{
+      const wd=data?.[asp]?.[ti]?.[ai]||{};const lv=lastVal(wd);const pp=actPct(wd,act.t);const as=st(pp);const ak=ti+"-"+ai;const isOA=openA===ak;
+      return h("div",{key:ai,style:{borderBottom:".5px solid #F1F5F9"}},
+       h("div",{className:"act-row",onClick:()=>setOpenA(isOA?null:ak),style:{background:ai%2===0?"#FAFBFF":"#fff",borderLeft:isOA?`3px solid ${as.dot}`:"3px solid transparent"}},
+        h("div",{className:"num-badge"},ti*4+ai+1),
+        h("span",{style:{flex:1,fontSize:"var(--fsm)",color:"var(--n700)"}},act.n),
+        h("span",{style:{fontSize:"var(--fxs)",color:"var(--n400)",minWidth:68,textAlign:"right",whiteSpace:"nowrap"}},`${lv} / ${act.t} ${act.u}`),
+        h(ProgBar,{p:pp}),
+        h("span",{style:{fontWeight:600,fontSize:"var(--fsm)",color:as.soft,minWidth:32,textAlign:"right"}},fp(pp)),
+        h("i",{className:"ti "+(isOA?"ti-chevron-up":"ti-pencil"),style:{fontSize:"var(--fsm)",color:"var(--n300)"}})
+       ),
+       isOA&&h(WeekPanel,{asp,ti,ai,act,weeks:wd,onUpdate})
+      );
+     })
+    );
+   })
+  )
+ );
+}
+function DashView({allData,onSiteClick}){
+ const ranked=[...SITES].sort((a,b)=>overallPct(allData[b]||{})-overallPct(allData[a]||{}));
+ const rankOf=s=>ranked.indexOf(s)+1;
+ const aspAvg=asp=>avg(SITES.map(s=>aspPct(allData[s]||{},asp)));
+ const ovrAvg=avg(SITES.map(s=>overallPct(allData[s]||{})));
+ return h("div",null,
+  h("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:9,marginBottom:13}},
+   ASPECTS.map(a=>{const pp=aspAvg(a);const s=st(pp);
+    const onT=SITES.filter(si=>aspPct(allData[si]||{},a)>=.9).length;
+    const atT=SITES.filter(si=>{const p=aspPct(allData[si]||{},a);return p>=.75&&p<.9;}).length;
+    const alT=SITES.filter(si=>aspPct(allData[si]||{},a)<.75).length;
+    return h("div",{key:a,className:"card"},
+     h("div",{style:{background:s.dot,padding:"clamp(11px,1.5vw,15px) clamp(12px,1.6vw,16px)"}},
+      h("div",{style:{color:"rgba(255,255,255,.7)",fontSize:"var(--fxs)",fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",marginBottom:4}},a.toUpperCase()+" — 8 sites"),
+      h("div",{style:{color:"#fff",fontSize:"var(--f4x)",fontWeight:300,letterSpacing:"-0.03em",lineHeight:1,marginBottom:4}},fp(pp)),
+      h("div",{style:{color:"rgba(255,255,255,.85)",fontSize:"var(--fsm)",fontWeight:500}},s.label)
+     ),
+     h("div",{style:{padding:"clamp(7px,1vw,10px) clamp(10px,1.3vw,14px)",display:"flex",gap:10,fontSize:"var(--fxs)"}},
+      h("span",null,h("span",{style:{color:"#15803D",fontWeight:700}},onT)," on track"),
+      h("span",null,h("span",{style:{color:"#92400E",fontWeight:700}},atT)," attention"),
+      h("span",null,h("span",{style:{color:"#991B1B",fontWeight:700}},alT)," alarming")
+     )
+    );
+   })
+  ),
+  h("div",{className:"card",style:{marginBottom:12}},
+   h("div",{style:{background:NAVY,padding:"clamp(8px,1.2vw,11px) 16px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:5}},
+    h("span",{style:{color:"#fff",fontSize:"var(--fmd)",fontWeight:500}},"HSSE performance by site — Zona 8 · 2026"),
+    h("span",{style:{color:"#7FA8D4",fontSize:"var(--fxs)"}},`8-site average: ${fp(ovrAvg)}`)
+   ),
+   h("div",{style:{overflowX:"auto"}},
+    h("table",{className:"tbl"},
+     h("thead",null,h("tr",{style:{background:NAVY}},
+      h("th",{style:{textAlign:"left",width:68}},"Site"),
+      ASPECTS.map(a=>h("th",{key:a,style:{minWidth:72}},a.substring(0,4).toUpperCase()+".")),
+      h("th",{style:{background:NAVY_D,minWidth:88}},h("span",{style:{color:"#BFDBFE"}},"Overall")),
+      h("th",{style:{width:50,color:"var(--n400)"}},"Rank")
+     )),
+     h("tbody",null,ranked.map((s,ri)=>{const sd=allData[s]||{};const ov=overallPct(sd);const os=st(ov);
+      return h("tr",{key:s,style:{background:ri%2===0?"#fff":"var(--n50)"}},
+       h("td",null,h("button",{onClick:()=>onSiteClick(s),style:{background:"none",border:"none",fontWeight:700,cursor:"pointer",color:NAVY,fontSize:"var(--fmd)",padding:0,letterSpacing:".04em"}},s," ",h("i",{className:"ti ti-arrow-right",style:{fontSize:"var(--fxs)",verticalAlign:"middle"}}))),
+       ASPECTS.map(a=>{const pp=aspPct(sd,a);const cs=st(pp);return h("td",{key:a},h("span",{style:{fontWeight:500,color:cs.soft}},fp(pp))," ",h(Dot,{p:pp,sz:5}));}),
+       h("td",{style:{padding:0,background:os.dot}},h("div",{style:{padding:"clamp(7px,1vw,9px) clamp(8px,1.2vw,13px)",display:"flex",flexDirection:"column",alignItems:"center",gap:2}},h("span",{style:{color:"#fff",fontWeight:700,fontSize:"var(--flg)"}},fp(ov)),h("span",{style:{color:"rgba(255,255,255,.75)",fontSize:"var(--fxs)",letterSpacing:".04em"}},os.label))),
+       h("td",{style:{color:"var(--n500)",fontWeight:600,fontSize:"var(--fsm)"}},h("span",{style:{display:"inline-flex",alignItems:"center",justifyContent:"center",width:"clamp(18px,2vw,22px)",height:"clamp(18px,2vw,22px)",borderRadius:"50%",background:ri<3?"var(--navy)":"var(--n100)",color:ri<3?"#fff":"var(--n500)",fontSize:"var(--fxs)",fontWeight:700}},"#"+rankOf(s)))
+      );
+     })),
+     h("tfoot",null,h("tr",{style:{background:NAVY_D,borderTop:"2px solid #001833"}},
+      h("td",{style:{color:"#7FA8D4",fontSize:"var(--fxs)",fontWeight:600,letterSpacing:".06em",padding:"clamp(7px,1vw,9px) clamp(8px,1.2vw,13px)"}},"AVERAGE"),
+      ASPECTS.map(a=>{const pp=aspAvg(a);const s=st(pp);const lc=s===ST.track?"#86EFAC":s===ST.attn?"#FCD34D":"#FCA5A5";return h("td",{key:a,style:{color:lc,fontWeight:600}},fp(pp));}),
+      h("td",{style:{padding:0,background:st(ovrAvg).dot}},h("div",{style:{padding:"clamp(7px,1vw,9px) clamp(8px,1.2vw,13px)",textAlign:"center"}},h("span",{style:{color:"#fff",fontWeight:700,fontSize:"var(--flg)"}},fp(ovrAvg)),h("span",{style:{color:"rgba(255,255,255,.7)",fontSize:"var(--fxs)",display:"block",marginTop:1}},st(ovrAvg).label))),
+      h("td")))
+    )
+   )
+  ),
+  h("div",{className:"card"},
+   h("div",{style:{background:"var(--n100)",padding:"clamp(8px,1.2vw,10px) 16px",borderBottom:".5px solid var(--n200)",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:5}},
+    h("span",{style:{fontSize:"var(--fmd)",fontWeight:500,color:NAVY}},"Site count by status"),
+    h("span",{style:{fontSize:"var(--fxs)",color:"var(--n400)"}},"≥ 90% on track · 75–89% attention · < 75% alarming")
+   ),
+   h("div",{style:{overflowX:"auto"}},
+    h("table",{className:"tbl"},
+     h("thead",null,h("tr",{style:{background:"var(--n50)"}},
+      h("th",{style:{textAlign:"left",color:"var(--n500)"}},"Status"),
+      ASPECTS.map(a=>h("th",{key:a,style:{color:"var(--n500)"}},a.substring(0,3).toUpperCase()+".")),
+      h("th",{style:{color:NAVY}},"Overall")
+     )),
+     h("tbody",null,[["On Track","track"],["Attention","attn"],["Alarming","alarm"]].map(([lbl,key])=>{
+      const s=ST[key];
+      const cnt=asp=>SITES.filter(si=>{const p=aspPct(allData[si]||{},asp);return key==="track"?p>=.9:key==="attn"?(p>=.75&&p<.9):p<.75;}).length;
+      const cov=SITES.filter(si=>{const p=overallPct(allData[si]||{});return key==="track"?p>=.9:key==="attn"?(p>=.75&&p<.9):p<.75;}).length;
+      return h("tr",{key:lbl},
+       h("td",{style:{padding:0,background:"#fff"}},
+        h("div",{style:{display:"flex",alignItems:"stretch"}}),
+        h("span",{style:{borderLeft:`3px solid ${s.dot}`,padding:"clamp(8px,1.2vw,10px) 10px clamp(8px,1.2vw,10px) 10px",display:"block",fontWeight:500,color:"var(--n700)",fontSize:"var(--fsm)"}},lbl)
+       ),
+       ASPECTS.map(a=>{const c=cnt(a);return h("td",{key:a,style:{fontWeight:700,fontSize:"clamp(16px,2.5vw,22px)",background:c>0?s.dot:"#fff",color:c>0?"#fff":"var(--n200)"}},c>0?c:"—");}),
+       h("td",{style:{fontWeight:700,fontSize:"clamp(16px,2.5vw,22px)",background:cov>0?s.dot:"#fff",color:cov>0?"#fff":"var(--n200)"}},cov>0?cov:"—")
+      );
+     }))
+    )
+   )
+  )
+ );
+}
+function App(){
+ const initTab=window.location.hash==="#consolidated"?"dash":"site";
+ const[tab,setTab]=useState(initTab);
+ const[site,setSite]=useState("BKP");
+ const[asp,setAsp]=useState("Safety");
+ const[allData,setAllData]=useState(null);
+ const[saveState,setSaveState]=useState("ready");
+ useEffect(()=>{setAllData(loadAll());},[]);
+ useEffect(()=>{const onHash=()=>{setTab(window.location.hash==="#consolidated"?"dash":"site");};window.addEventListener("hashchange",onHash);return()=>window.removeEventListener("hashchange",onHash);},[]);
+ function switchTab(t){history.replaceState(null,"",t==="dash"?"#consolidated":"#site-detail");setTab(t);}
+ function onUpdate(a,ti,ai,week,val){
+  const nd=JSON.parse(JSON.stringify(allData));
+  if(!nd[site])nd[site]=makeDemo(site);const b=nd[site];
+  if(!b[a])b[a]={};if(!b[a][ti])b[a][ti]={};if(!b[a][ti][ai])b[a][ti][ai]={};
+  if(val===""||val==null)delete b[a][ti][ai][week];else b[a][ti][ai][week]=+val;
+  setAllData(nd);setSaveState("saving");
+  saveSite(site,nd[site]);
+  setSaveState("saved");setTimeout(()=>setSaveState("ready"),1800);
+ }
+ if(!allData)return h("div",{style:{padding:"3rem",textAlign:"center",color:"var(--n400)",fontSize:"var(--fsm)",letterSpacing:".08em",textTransform:"uppercase"}},"Loading HSSE data…");
+ return h("div",null,
+  h("div",{style:{background:NAVY,padding:"clamp(10px,1.5vw,13px) 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:6}},
+   h("div",null,
+    h("div",{style:{color:"#fff",fontWeight:500,fontSize:"var(--fxl)",letterSpacing:".01em"}},"HSSE Performance Dashboard"),
+    h("div",{style:{color:"#7FA8D4",fontSize:"var(--fxs)",marginTop:1,letterSpacing:".07em"}},"HSSE OPERATIONS ZONA 8 · 2026")
+   ),
+   h("div",{style:{display:"flex",alignItems:"center",gap:14}},
+    h("a",{href:"HSSE_Dashboard_2026.xlsx",style:{color:"#BFDBFE",fontSize:"var(--fxs)",textDecoration:"none",display:"flex",alignItems:"center",gap:4}},
+     h("i",{className:"ti ti-file-spreadsheet",style:{fontSize:"var(--fsm)"}}),
+     "Excel version"
+    ),
+    h("div",{style:{fontSize:"var(--fxs)",color:saveState==="saving"?"#BFDBFE":saveState==="saved"?"#86EFAC":"var(--n500)"}},
+     saveState==="saving"?"Saving…":saveState==="saved"?"✓ Saved":"✓ Ready")
+   )
+  ),
+  h("div",{style:{background:"#fff",borderBottom:".5px solid var(--n200)",padding:"0 18px",display:"flex",gap:0}},
+   h("button",{className:"tab-link"+(tab==="site"?" on":""),onClick:()=>switchTab("site")},"Site detail"),
+   h("button",{className:"tab-link"+(tab==="dash"?" on":""),onClick:()=>switchTab("dash")},"Consolidated")
+  ),
+  h("div",{style:{padding:"clamp(10px,1.5vw,14px)",background:"var(--n50)",minHeight:400}},
+   tab==="site"?h(SiteView,{site,setSite,asp,setAsp,data:allData[site]||{},onUpdate}):h(DashView,{allData,onSiteClick:s=>{setSite(s);switchTab("site");}})
+  )
+ );
+}
+ReactDOM.render(h(App),document.getElementById("root"));
+</script>
+</body>
+</html>
